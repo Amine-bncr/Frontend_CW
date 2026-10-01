@@ -4,10 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
+
+    <div id="div1">
+        <h2>{{lesson.title}}</h2>
+        <p>Price: £{{lesson.price}}</p>
+         <p>Availability: {{lesson.availibility}}</p>
+
+         <button v-on:click="addToCart()" v-bind:disabled="!canAddToCart">Add to cart</button>
+
+         <p> Item in cart: {{ cart.length }}</p>
+
+    </div>
+
+      <script type="module">
+        const {createApp} = Vue
+        const myApp1 = createApp({
+            data(){
+                return{
+                    lesson: {
+                        id: 1001,
+                        title: "Computer Science",
+                        price: 25,
+                        availibility: 5,
+                    },
+                    
+                    cart: [],
+                }
+            },
+            computed:{
+                canAddToCart:function(){
+                    return this.lesson.availibility > 0;
+                }
+            },
+            methods:{
+                addToCart(){
+                    this.lesson.availibility = this.lesson.availibility - 1;
+                    this.cart.push(this.lesson);
+                },              
+            }
+        })
+        myApp1.mount("#div1")
+    </script>
     
-    <p>Welcome to my website!</p>
 
 </body>
 </html>
