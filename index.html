@@ -1,56 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>Lessons</title>
+
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
+
 <body>
 
     <div id="div1">
-        <h2>{{lesson.title}}</h2>
-        <p>Price: £{{lesson.price}}</p>
-         <p>Availability: {{lesson.availibility}}</p>
 
-         <button v-on:click="addToCart()" v-bind:disabled="!canAddToCart">Add to cart</button>
+        <h2>{{ lesson.subject }}</h2>
 
-         <p> Item in cart: {{ cart.length }}</p>
+        <p>Location: {{ lesson.Location }}</p>
+
+        <p>Price: £{{ lesson.price }}</p>
+
+        <p>
+            <img 
+                :src="lesson.image" 
+                :alt="lesson.subject"
+                width="300"
+            >
+        </p>
+
+        <p>Availability: {{ lesson.availibility }}</p>
+
+        <button 
+            v-on:click="addToCart()" 
+            v-bind:disabled="!canAddToCart">
+            Add to cart
+        </button>
+
+        <button v-on:click="checkout()">
+            Checkout
+        </button>
+
+        <p>Items in cart: {{ cart.length }}</p>
 
     </div>
 
-      <script type="module">
-        const {createApp} = Vue
+
+    <script type="module">
+
+        const { createApp } = Vue
+
         const myApp1 = createApp({
-            data(){
-                return{
-                    lesson: {
-                        id: 1001,
-                        title: "Computer Science",
-                        price: 25,
-                        availibility: 5,
-                    },
-                    
-                    cart: [],
+
+            data() {
+
+                return {
+
+                    lessons: [
+
+                        {
+                            Id: "CST3144",
+                            subject: "Full Stack Development",
+                            Location: "Room 101",
+                            price: 10,
+                            availibility: 5,
+                            image: "images/Full Stack Development.jpg"
+                        },
+
+                        {
+                            Id: "CST3145",
+                            subject: "Business Intelligence",
+                            Location: "Room 102",
+                            price: 20,
+                            availibility: 5,
+                            image: "images/Business Intelligence.jpg"
+                        },
+
+                        {
+                            Id: "CST3146",
+                            subject: "AI",
+                            Location: "Room 103",
+                            price: 30,
+                            availibility: 5,
+                            image: "images/Ai image.jpg"
+                        }
+
+                    ],
+
+                    displayCart: false,
+
+                    cart: []
+
                 }
+
             },
-            computed:{
-                canAddToCart:function(){
+
+            computed: {
+
+                lesson() {
+                    return this.lessons[0];
+                },
+
+                canAddToCart() {
                     return this.lesson.availibility > 0;
                 }
+
             },
-            methods:{
-                addToCart(){
-                    this.lesson.availibility = this.lesson.availibility - 1;
+
+            methods: {
+
+                addToCart() {
+
+                    this.lesson.availibility =
+                        this.lesson.availibility - 1;
+
                     this.cart.push(this.lesson);
-                },              
+
+                },
+
+                removeFromCart() {
+
+                    this.lesson.availibility =
+                        this.lesson.availibility + 1;
+
+                    this.cart.pop();
+
+                },
+
+                checkout() {
+
+                    this.cart = [];
+
+                }
+
             }
+
         })
+
         myApp1.mount("#div1")
+
     </script>
-    
 
 </body>
+
 </html>
