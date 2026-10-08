@@ -5,79 +5,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Lessons</title>
+    <title>Our Lessons</title>
 
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+
 </head>
 
+ 
 <body>
-
-    <div id="div1">
-
-        <h2>{{ lesson.subject }}</h2>
-
-        <p>Location: {{ lesson.Location }}</p>
-
-        <p>Price: £{{ lesson.price }}</p>
-
-        <p>
-            <img 
-                :src="lesson.image" 
-                :alt="lesson.subject"
-                width="300"
-            >
-        </p>
-
-        <p>Availability: {{ lesson.availibility }}</p>
-
-        <button 
-            v-on:click="addToCart()" 
-            v-bind:disabled="!canAddToCart">
-            Add to cart
-        </button>
-
-        <button v-on:click="checkout()">
-            Checkout
-        </button>
-
-        <p>Items in cart: {{ cart.length }}</p>
-
+ 
+    <!-- The Vue app mounts on this element -->
+    <div id="app">
+ 
+        <header>
+            <h1><i class="fa fa-graduation-cap"></i> Our Lessons</h1>
+            <button @click="displayCart = !displayCart" :disabled="!displayCart && cart.length === 0">
+                <i class="fa fa-shopping-cart"></i>
+                {{ displayCart ? 'Back to Lessons' : 'Cart (' + cartCount + ')' }}
+            </button>
+        </header>
+ 
+        <main>
+ 
+            <!-- LESSONS PAGE -->
+            <section v-if="!displayCart">
+                <h2>Available Lessons</h2>
+ 
+                <ul class="lessons">
+                    <li class="lesson" v-for="lesson in lessons" :key="lesson.Id">
+                        <img :src="lesson.image" width="200" height="200" :alt="lesson.subject">
+ 
+                        <ul class="details">
+                            <li class="title" v-text="lesson.subject"></li>
+                            <li v-text="'ID: ' + lesson.Id"></li>
+                            <li v-text="'Location: ' + lesson.Location"></li>
+                            <li v-text="'Price: £' + lesson.price"></li>
+                            <li v-text="lesson.availibility > 0 ? 'Availability: ' + lesson.availibility + ' spaces left' : 'Fully booked'"
+                                :class="{ soldout: lesson.availibility === 0 }"></li>
+                            <li>
+                                <button @click="addToCart(lesson)" :disabled="lesson.availibility === 0">
+                                    <i class="fa fa-cart-plus"></i> Add to Cart
+                                </button>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+ 
+            <!-- CART PAGE -->
+            <section v-else class="cart">
+                <h2>Your Cart</h2>
+ 
+                <p v-if="cart.length === 0" class="empty">Your cart is empty.</p>
+ 
+                <ul class="cart-list">
+                    <li class="cart-item" v-for="item in cart" :key="item.Id">
+                        <span class="info" v-text="item.subject + ' (' + item.Id + ') - ' + item.Location"></span>
+                        <span v-text="'£' + item.price + ' x ' + item.quantity"></span>
+                        <span class="line-total" v-text="'= £' + (item.price * item.quantity)"></span>
+ 
+                        <span class="qty">
+                            <button @click="removeOne(item)" aria-label="Remove one"><i class="fa fa-minus"></i></button>
+                            <button @click="addToCart(findLesson(item.Id))"
+                                :disabled="findLesson(item.Id).availibility === 0" aria-label="Add one">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </span>
+ 
+                        <button class="remove" @click="removeFromCart(item)">
+                            <i class="fa fa-trash"></i> Remove
+                        </button>
+                    </li>
+                </ul>
+ 
+                <div class="cart-footer" v-if="cart.length > 0">
+                    <span v-text="'Total: £' + cartTotal"></span>
+                    <button @click="checkout"><i class="fa fa-credit-card"></i> Checkout</button>
+                </div>
+            </section>
+ 
+        </main>
     </div>
-
-
-    <script type="module">
-
+ 
+ 
+    <script>
         const { createApp } = Vue
-
-        const myApp1 = createApp({
-
+ 
+        createApp({
+ 
             data() {
-
                 return {
-
                     lessons: [
-
                         {
                             Id: "CST3144",
                             subject: "Full Stack Development",
                             Location: "Room 101",
                             price: 10,
                             availibility: 5,
-                            image: "images/Full Stack Development.jpg"
+                            image: "images/Full Stack development image.jpg"
                         },
-
                         {
                             Id: "CST3145",
                             subject: "Business Intelligence",
                             Location: "Room 102",
                             price: 20,
                             availibility: 5,
-                            image: "images/Business Intelligence.jpg"
+                            image: "images/Business Intelligence image.jpg"
                         },
-
                         {
                             Id: "CST3146",
                             subject: "AI",
@@ -86,63 +124,86 @@
                             availibility: 5,
                             image: "images/Ai image.jpg"
                         }
-
                     ],
-
+ 
                     displayCart: false,
-
+ 
+                    // each cart entry: { Id, subject, Location, price, quantity }
                     cart: []
-
                 }
-
             },
-
+ 
             computed: {
-
-                lesson() {
-                    return this.lessons[0];
+                cartCount() {
+                    return this.cart.reduce((sum, item) => sum + item.quantity, 0)
                 },
-
-                canAddToCart() {
-                    return this.lesson.availibility > 0;
+                cartTotal() {
+                    return this.cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
                 }
-
             },
-
+ 
             methods: {
-
-                addToCart() {
-
-                    this.lesson.availibility =
-                        this.lesson.availibility - 1;
-
-                    this.cart.push(this.lesson);
-
+ 
+                findLesson(id) {
+                    return this.lessons.find(l => l.Id === id)
                 },
-
-                removeFromCart() {
-
-                    this.lesson.availibility =
-                        this.lesson.availibility + 1;
-
-                    this.cart.pop();
-
+ 
+                addToCart(lesson) {
+                    if (lesson.availibility <= 0) return
+ 
+                    const existing = this.cart.find(item => item.Id === lesson.Id)
+ 
+                    if (existing) {
+                        existing.quantity++
+                    } else {
+                        this.cart.push({
+                            Id: lesson.Id,
+                            subject: lesson.subject,
+                            Location: lesson.Location,
+                            price: lesson.price,
+                            quantity: 1
+                        })
+                    }
+ 
+                    lesson.availibility--
                 },
-
+ 
+                // remove a single space from the cart and give it back to the lesson
+                removeOne(item) {
+                    this.findLesson(item.Id).availibility++
+                    item.quantity--
+ 
+                    if (item.quantity === 0) {
+                        this.cart = this.cart.filter(c => c.Id !== item.Id)
+                    }
+                    this.closeCartIfEmpty()
+                },
+ 
+                // remove the whole lesson from the cart
+                removeFromCart(item) {
+                    this.findLesson(item.Id).availibility += item.quantity
+                    this.cart = this.cart.filter(c => c.Id !== item.Id)
+                    this.closeCartIfEmpty()
+                },
+ 
+                closeCartIfEmpty() {
+                    if (this.cart.length === 0) this.displayCart = false
+                },
+ 
                 checkout() {
-
-                    this.cart = [];
-
+                    if (this.cart.length > 0) {
+                        alert("Thank you for your purchase!")
+                        this.cart = []
+                        this.displayCart = false
+                    } else {
+                        alert("Your cart is empty!")
+                    }
                 }
-
             }
-
-        })
-
-        myApp1.mount("#div1")
-
+ 
+        }).mount("#app")   // must match the id of the element above
     </script>
-
+ 
 </body>
-
+ 
 </html>
