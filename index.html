@@ -36,7 +36,7 @@
                 <h2>Available Lessons</h2>
  
                 <ul class="lessons">
-                    <li class="lesson" v-for="lesson in lessons" :key="lesson.Id">
+                    <li class="lesson" v-for="lesson in sortedLessons" :key="lesson.Id">
                         <img :src="lesson.image" width="200" height="200" :alt="lesson.subject">
  
                         <ul class="details">
@@ -96,35 +96,10 @@
         const { createApp } = Vue
  
         createApp({
- 
             data() {
                 return {
-                    lessons: [
-                        {
-                            Id: "CST3144",
-                            subject: "Full Stack Development",
-                            Location: "Room 101",
-                            price: 10,
-                            availibility: 5,
-                            image: "images/Full Stack development image.jpg"
-                        },
-                        {
-                            Id: "CST3145",
-                            subject: "Business Intelligence",
-                            Location: "Room 102",
-                            price: 20,
-                            availibility: 5,
-                            image: "images/Business Intelligence image.jpg"
-                        },
-                        {
-                            Id: "CST3146",
-                            subject: "AI",
-                            Location: "Room 103",
-                            price: 30,
-                            availibility: 5,
-                            image: "images/Ai image.jpg"
-                        }
-                    ],
+                    lessons: [],
+                    isAscending: true,
  
                     displayCart: false,
  
@@ -139,11 +114,44 @@
                 },
                 cartTotal() {
                     return this.cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+                },
+                sortedLessons() {
+                    return this.lessons.slice().sort((a, b) => a.subject.localeCompare(b.subject))
+                    let sorted = this.lessons.slice().sort((a, b) => a.subject.localeCompare(b.subject))
+                    if (!this.isAscending) {
+                        sorted.reverse()
+                    }
+                    return sorted
                 }
             },
+            created() {
+                this.fetchData();
+            },
+            
+
+
  
             methods: {
- 
+                async fetchData() {
+                    try {
+                        const response = await fetch('http://localhost:3000/');
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log("Lessons received:", data);
+                        
+                        if (!Array.isArray(data)) {
+                            throw new Error("The backend response is not an array.");
+                        }
+                        
+                        this.lessons = data;
+                    
+                    } catch (error) {
+                        console.error("Failed to fetch lessons:", error);
+                    }
+                },
                 findLesson(id) {
                     return this.lessons.find(l => l.Id === id)
                 },
