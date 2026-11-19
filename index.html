@@ -34,20 +34,38 @@
             <!-- LESSONS PAGE -->
             <section v-if="!displayCart">
                 <h2>Available Lessons</h2>
- 
+
+                <p v-if="orderMessage" class="order-message">{{ orderMessage }}</p>
+
+                <label> Sort by: 
+                    <select v-model="sortBy">
+                        <option value="subject">Subject</option>
+                        <option value="location">Location</option>
+                        <option value="price">Price</option>
+                        <option value="availability">Spaces</option>
+                    </select>
+                </label>
+
+                <label> Order: 
+                    <select v-model="isAscending">
+                        <option :value="true">Ascending</option>
+                        <option :value="false">Descending</option>
+                    </select>
+                </label>
+
                 <ul class="lessons">
                     <li class="lesson" v-for="lesson in sortedLessons" :key="lesson.Id">
-                        <img :src="lesson.image" width="200" height="200" :alt="lesson.subject">
+                        <img :src="apiUrl + '/images/' + lesson.image" width="200" height="150" :alt="lesson.subject">
  
                         <ul class="details">
                             <li class="title" v-text="lesson.subject"></li>
                             <li v-text="'ID: ' + lesson.Id"></li>
-                            <li v-text="'Location: ' + lesson.Location"></li>
+                            <li v-text="'Location: ' + lesson.location"></li>
                             <li v-text="'Price: £' + lesson.price"></li>
-                            <li v-text="lesson.availibility > 0 ? 'Availability: ' + lesson.availibility + ' spaces left' : 'Fully booked'"
-                                :class="{ soldout: lesson.availibility === 0 }"></li>
+                            <li v-text="lesson.availability > 0 ? 'Availability: ' + lesson.availability + ' spaces left' : 'Fully booked'"
+                                :class="{ soldout: lesson.availability === 0 }"></li>
                             <li>
-                                <button @click="addToCart(lesson)" :disabled="lesson.availibility === 0">
+                                <button @click="addToCart(lesson)" :disabled="lesson.availability === 0">
                                     <i class="fa fa-cart-plus"></i> Add to Cart
                                 </button>
                             </li>
@@ -64,14 +82,14 @@
  
                 <ul class="cart-list">
                     <li class="cart-item" v-for="item in cart" :key="item.Id">
-                        <span class="info" v-text="item.subject + ' (' + item.Id + ') - ' + item.Location"></span>
+                        <span class="info" v-text="item.subject + ' (' + item.Id + ') - ' + item.location"></span>
                         <span v-text="'£' + item.price + ' x ' + item.quantity"></span>
                         <span class="line-total" v-text="'= £' + (item.price * item.quantity)"></span>
  
                         <span class="qty">
                             <button @click="removeOne(item)" aria-label="Remove one"><i class="fa fa-minus"></i></button>
                             <button @click="addToCart(findLesson(item.Id))"
-                                :disabled="findLesson(item.Id).availibility === 0" aria-label="Add one">
+                                :disabled="findLesson(item.Id).availability === 0" aria-label="Add one">
                                 <i class="fa fa-plus"></i>
                             </button>
                         </span>
@@ -82,9 +100,15 @@
                     </li>
                 </ul>
  
-                <div class="cart-footer" v-if="cart.length > 0">
-                    <span v-text="'Total: £' + cartTotal"></span>
-                    <button @click="checkout"><i class="fa fa-credit-card"></i> Checkout</button>
+                <div class="cart-footer">
+                     <span v-text="'Total: £' + cartTotal"></span>
+
+                    <input v-model="name" placeholder="Name (letters only)">
+                    <input v-model="phone" placeholder="Phone (numbers only)">
+
+                    <button @click="checkout" :disabled="!canCheckout">
+                        <i class="fa fa-credit-card"></i> Checkout
+                    </button>
                 </div>
             </section>
  
@@ -98,13 +122,14 @@
         createApp({
             data() {
                 return {
+                    apiUrl: 'http://localhost:3000',
                     lessons: [],
                     isAscending: true,
- 
                     displayCart: false,
- 
-                    // each cart entry: { Id, subject, Location, price, quantity }
-                    cart: []
+                    cart: [],
+                    name: '',
+                    phone: '',
+                    orderMessage: '',
                 }
             },
  
@@ -116,14 +141,26 @@
                     return this.cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
                 },
                 sortedLessons() {
-                    return this.lessons.slice().sort((a, b) => a.subject.localeCompare(b.subject))
-                    let sorted = this.lessons.slice().sort((a, b) => a.subject.localeCompare(b.subject))
-                    if (!this.isAscending) {
-                        sorted.reverse()
-                    }
-                    return sorted
+                    const key = this.sortBy
+                    const dir = this.isAscending ? 1 : -1
+                    return this.lessons.slice().sort((a, b) => {
+                        if (typeof a[key] === 'string') {
+                            return a[key].localeCompare(b[key]) * dir
+                        }
+                            return (a[key] - b[key]) * dir
+                    })
+                },
+                validName() {
+                    return /^[a-zA-Z\s]+$/.test(this.name.trim())
+                },
+                validPhone() {
+                    return /^[0-9]+$/.test(this.phone)
+                },
+                canCheckout() {
+                    return this.validName && this.validPhone
                 }
             },
+
             created() {
                 this.fetchData();
             },
@@ -134,7 +171,7 @@
             methods: {
                 async fetchData() {
                     try {
-                        const response = await fetch('http://localhost:3000/');
+                        const response = await fetch(this.apiUrl + '/lessons');
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
                         }
@@ -157,7 +194,7 @@
                 },
  
                 addToCart(lesson) {
-                    if (lesson.availibility <= 0) return
+                    if (lesson.availability <= 0) return
  
                     const existing = this.cart.find(item => item.Id === lesson.Id)
  
@@ -167,18 +204,18 @@
                         this.cart.push({
                             Id: lesson.Id,
                             subject: lesson.subject,
-                            Location: lesson.Location,
+                            location: lesson.location,
                             price: lesson.price,
                             quantity: 1
                         })
                     }
  
-                    lesson.availibility--
+                    lesson.availability--
                 },
  
                 // remove a single space from the cart and give it back to the lesson
                 removeOne(item) {
-                    this.findLesson(item.Id).availibility++
+                    this.findLesson(item.Id).availability++
                     item.quantity--
  
                     if (item.quantity === 0) {
@@ -189,7 +226,7 @@
  
                 // remove the whole lesson from the cart
                 removeFromCart(item) {
-                    this.findLesson(item.Id).availibility += item.quantity
+                    this.findLesson(item.Id).availability += item.quantity
                     this.cart = this.cart.filter(c => c.Id !== item.Id)
                     this.closeCartIfEmpty()
                 },
@@ -199,13 +236,13 @@
                 },
  
                 checkout() {
-                    if (this.cart.length > 0) {
-                        alert("Thank you for your purchase!")
-                        this.cart = []
-                        this.displayCart = false
-                    } else {
-                        alert("Your cart is empty!")
-                    }
+                    if (!this.canCheckout || this.cart.length === 0) return
+
+                    this.orderMessage = 'Thank yiy ' + this.name.trim() + '! Your order has been submitted!'
+                    this.cart = []
+                    this.name = ''
+                    this.phone = ''
+                    this.displayCart = false
                 }
             }
  
