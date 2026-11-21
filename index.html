@@ -245,16 +245,41 @@
                     if (this.cart.length === 0) this.displayCart = false
                 },
  
-                checkout() {
+                async checkout() {
                     if (!this.canCheckout || this.cart.length === 0) return
 
-                    this.orderMessage = 'Thank yiy ' + this.name.trim() + '! Your order has been submitted!'
-                    this.cart = []
-                    this.name = ''
-                    this.phone = ''
-                    this.displayCart = false
+                    const order = {
+                        name: this.name.trim(),
+                        phone: this.phone,
+                        items: this.cart.map(i => ({ lessonId: i.Id, quantity: i.quantity })),
+                        spaces: this.cartCount
+                    }
+
+                    try {
+                        // POST: save the order
+                        const response = await fetch(this.apiUrl + '/orders', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(order)
+                        })
+                        if (!response.ok) throw new Error('Order failed: ' + response.status)
+
+                        // PUT : save the new availability for every lesson in the cart
+                        for (const item of this.cart) {
+                            await this.updateLesson(this.findLesson(item.Id))
+                        }
+                        this.orderMessage = 'Thank yiy ' + this.name.trim() + '! Your order has been submitted!'
+                        this.cart = []
+                        this.name = ''
+                        this.phone = ''
+                        this.displayCart = false
+                    } catch (error) {
+                        console.error(error)
+                        this.orderMessage = 'Sorry, something went wrong. Please try again.'
+                    }
                 }
             }
+                    
  
         }).mount("#app")   // must match the id of the element above
     </script>
