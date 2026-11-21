@@ -192,6 +192,16 @@
                 findLesson(id) {
                     return this.lessons.find(l => l.Id === id)
                 },
+                async updateLesson(lesson) {
+                    const updateBody = { availability: lesson.availability };
+                    const url = this.apiUrl + '/lessons/' + lesson.Id;
+                    const options = {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updateBody)
+                    };
+                    await fetch(url, options);
+                },
  
                 addToCart(lesson) {
                     if (lesson.availability <= 0) return
